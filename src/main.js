@@ -4,9 +4,19 @@ const MAX_DISCOUNTS = 5;
 function calculateCumulativeDiscount() {
     const inputs = document.querySelectorAll('[id^="discount"]');
     const result = document.getElementById('result');
+    const basePrice = parseFloat(document.getElementById('basePrice').value) || 0;
+    const errorPrice = document.getElementById('errorPrice');
     let isValid = true;
     
-    // Validate all inputs and collect values
+    // Validate base price
+    if (basePrice <= 0) {
+        errorPrice.style.display = 'block';
+        isValid = false;
+    } else {
+        errorPrice.style.display = 'none';
+    }
+    
+    // Validate all discount inputs and collect values
     const discounts = Array.from(inputs).map(input => {
         const value = parseFloat(input.value) || 0;
         const errorElement = document.getElementById(`error${input.id.replace('discount', '')}`);
@@ -22,15 +32,28 @@ function calculateCumulativeDiscount() {
     });
     
     if (!isValid) {
-        result.textContent = 'הנחה כוללת: קלט לא תקין';
+        result.innerHTML = `
+            <div class="total-discount">הנחה כוללת: קלט לא תקין</div>
+            <div class="amount-saved">חסכת: קלט לא תקין</div>
+            <div class="final-price">מחיר סופי: קלט לא תקין</div>
+        `;
         return;
     }
     
     // Calculate cumulative discount
-    const cumulativeDiscount = (1 - discounts.reduce((acc, discount) => 
+    const cumulativeDiscountRate = (1 - discounts.reduce((acc, discount) => 
         acc * (1 - discount/100), 1)) * 100;
     
-    result.textContent = `הנחה כוללת: ${cumulativeDiscount.toFixed(2)}%`;
+    // Calculate final price
+    const finalPrice = basePrice * (1 - cumulativeDiscountRate/100);
+    
+    const amountSaved = basePrice - finalPrice;
+    
+    result.innerHTML = `
+        <div class="total-discount">הנחה כוללת: ${cumulativeDiscountRate.toFixed(2)}%</div>
+        <div class="amount-saved">חסכת: ${amountSaved.toFixed(2)} ₪</div>
+        <div class="final-price">מחיר סופי: ${finalPrice.toFixed(2)} ₪</div>
+    `;
 }
 
 function createDiscountInput(number) {
@@ -42,7 +65,7 @@ function createDiscountInput(number) {
     inputRow.className = 'input-row';
     
     const inputWrapper = document.createElement('div');
-    inputWrapper.style.flex = '1';
+    inputWrapper.className = 'input-container';
     
     const label = document.createElement('label');
     label.htmlFor = `discount${number}`;
@@ -105,9 +128,11 @@ function updateAddButton() {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    const basePrice = document.getElementById('basePrice');
     const discount1 = document.getElementById('discount1');
     const discount2 = document.getElementById('discount2');
     
+    basePrice.addEventListener('input', calculateCumulativeDiscount);
     discount1.addEventListener('input', calculateCumulativeDiscount);
     discount2.addEventListener('input', calculateCumulativeDiscount);
     
